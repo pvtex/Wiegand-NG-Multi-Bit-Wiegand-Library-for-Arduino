@@ -146,4 +146,50 @@ WiegandNG::~WiegandNG() {
 	}
 }
 
+unsigned long long convert(const char *str)
+{
+    unsigned long long result = 0;
+
+    while(*str)
+    {
+        result <<= 1;
+        result += *str++ == '1' ? 1 : 0;
+    }
+    return result;
+}
+
+long WiegandNG::getCode(WiegandNG &tempwg) {
+	volatile unsigned char *buffer=tempwg.getRawData();
+	unsigned int bufferSize = tempwg.getBufferSize();
+	unsigned int countedBits = tempwg.getBitCounted();
+
+	unsigned int countedBytes = (countedBits/8);
+
+  String tempcode = "";
+  long code = 0;
+
+	if ((countedBits % 8)>0) countedBytes++;
+	// unsigned int bitsUsed = countedBytes * 8;
+	
+	for (unsigned int i=bufferSize-countedBytes; i< bufferSize;i++) {
+		unsigned char bufByte=buffer[i];
+		for(int x=0; x<8;x++) {
+			if ( (((bufferSize-i) *8)-x) <= countedBits) {
+				if((bufByte & 0x80)) {
+					tempcode += "1";
+				}
+				else {
+          tempcode += "0";				
+        }
+      }
+			bufByte<<=1;
+		}
+	}
+  
+  code = convert(tempcode.c_str());
+
+	return  code;
+}
+
+
 
