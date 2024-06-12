@@ -73,6 +73,7 @@ bool WiegandNG::available() {
 	if ((sysTick - tempLastPulseTime) > _packetGap) {	// _packetGap (ms) laps
 		if(_bitCounted>0) {							// bits found, must have data, return true
 			if(_bitCounted<8) {
+#ifdef DEBUG
 				Serial.print(_bitCounted);
 				Serial.print(", ");
 				Serial.print(sysTick);
@@ -80,6 +81,7 @@ bool WiegandNG::available() {
 				Serial.print(_lastPulseTime);
 				Serial.print(",");
 				Serial.println(tempLastPulseTime);
+#endif
 			}
 			ret=true;
 		}
@@ -146,7 +148,7 @@ WiegandNG::~WiegandNG() {
 	}
 }
 
-unsigned long long convert(const char *str)
+unsigned long long WiegandNG::convert(const char *str)
 {
     unsigned long long result = 0;
 
@@ -165,7 +167,7 @@ long WiegandNG::getCode() {
   	String tempcode = "";
   	long code = 0;
 
-	if ((countedBits % 8)>0) countedBytes++;
+	if ((_bitCounted % 8)>0) countedBytes++;
 	// unsigned int bitsUsed = countedBytes * 8;
 	
 	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
