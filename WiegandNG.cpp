@@ -146,7 +146,7 @@ WiegandNG::~WiegandNG() {
 	}
 }
 
-unsigned long long convert(const char *str)
+unsigned long long WiegandNG::convert(const char *str)
 {
     unsigned long long result = 0;
 
@@ -165,7 +165,7 @@ long WiegandNG::getCode() {
   	String tempcode = "";
   	long code = 0;
 
-	if ((countedBits % 8)>0) countedBytes++;
+	if ((_bitCounted % 8)>0) countedBytes++;
 	// unsigned int bitsUsed = countedBytes * 8;
 	
 	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
