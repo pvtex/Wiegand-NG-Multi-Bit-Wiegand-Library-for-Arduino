@@ -158,35 +158,32 @@ unsigned long long convert(const char *str)
     return result;
 }
 
-long WiegandNG::getCode(WiegandNG &tempwg) {
-	volatile unsigned char *buffer=tempwg.getRawData();
-	unsigned int bufferSize = tempwg.getBufferSize();
-	unsigned int countedBits = tempwg.getBitCounted();
+long WiegandNG::getCode() {
+	volatile unsigned char *buffer=_buffer;
+	unsigned int countedBytes = (_bitCounted/8);
 
-	unsigned int countedBytes = (countedBits/8);
-
-  String tempcode = "";
-  long code = 0;
+  	String tempcode = "";
+  	long code = 0;
 
 	if ((countedBits % 8)>0) countedBytes++;
 	// unsigned int bitsUsed = countedBytes * 8;
 	
-	for (unsigned int i=bufferSize-countedBytes; i< bufferSize;i++) {
+	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
 		unsigned char bufByte=buffer[i];
 		for(int x=0; x<8;x++) {
-			if ( (((bufferSize-i) *8)-x) <= countedBits) {
+			if ( (((_bufferSize-i) *8)-x) <= _bitCounted) {
 				if((bufByte & 0x80)) {
 					tempcode += "1";
 				}
 				else {
-          tempcode += "0";				
-        }
-      }
+          				tempcode += "0";				
+        			}
+      			}
 			bufByte<<=1;
 		}
 	}
   
-  code = convert(tempcode.c_str());
+  	code = convert(tempcode.c_str());
 
 	return  code;
 }
