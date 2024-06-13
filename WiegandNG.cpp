@@ -185,13 +185,7 @@ long WiegandNG::getCode(bool removeParityBits) {
 		}
 	}
 
-	if (removeParityBits) {
-  		code = convert((tempcode.substring(1,-1)).c_str());
-	} else 
-	{
-		code = convert(tempcode.c_str());
-	}
-
+	code = convert(tempcode.c_str());
 	return code;
 }
 
