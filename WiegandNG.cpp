@@ -160,7 +160,7 @@ unsigned long long WiegandNG::convert(const char *str)
     return result;
 }
 
-long WiegandNG::getCode() {
+long WiegandNG::getCode(bool removeParityBits) {
 	volatile unsigned char *buffer=_buffer;
 	unsigned int countedBytes = (_bitCounted/8);
 
@@ -184,7 +184,7 @@ long WiegandNG::getCode() {
 			bufByte<<=1;
 		}
 	}
-  
+
   	code = convert(tempcode.c_str());
 
 	return  code;
