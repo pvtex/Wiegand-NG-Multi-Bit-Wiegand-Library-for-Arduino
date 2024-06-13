@@ -31,7 +31,7 @@ public:
 	unsigned int getPacketGap();
 	volatile unsigned char *getRawData();
 	unsigned long long convert(const char *str);
-	long getCode();
+	long getCode(bool removeParityBits);
 	WiegandNG();
 	~WiegandNG();
 };
