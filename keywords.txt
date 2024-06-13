@@ -21,6 +21,9 @@ getBitAllocated	KEYWORD2
 getBufferSize	KEYWORD2
 getPacketGap	KEYWORD2
 getRawData	KEYWORD2
+getCode  KEYWORD2
+getUID  KEYWORD2
+convert  KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
