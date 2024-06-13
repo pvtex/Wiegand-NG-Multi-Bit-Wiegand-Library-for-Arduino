@@ -30,8 +30,9 @@ public:
 	unsigned int getBufferSize();
 	unsigned int getPacketGap();
 	volatile unsigned char *getRawData();
-	unsigned long long convert(const char *str);
+	long convert(const char *str);
 	long getCode(bool removeParityBits);
+	String getUID(bool removeParityBits, bool wiegandReadHex);
 	WiegandNG();
 	~WiegandNG();
 };
