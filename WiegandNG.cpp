@@ -148,9 +148,9 @@ WiegandNG::~WiegandNG() {
 	}
 }
 
-unsigned long long WiegandNG::convert(const char *str)
+long WiegandNG::convert(const char *str)
 {
-    unsigned long long result = 0;
+    long result = 0;
 
     while(*str)
     {
@@ -178,17 +178,70 @@ long WiegandNG::getCode(bool removeParityBits) {
 					tempcode += "1";
 				}
 				else {
-          				tempcode += "0";				
-        			}
-      			}
+          			tempcode += "0";				
+        		}
+      		}
 			bufByte<<=1;
 		}
 	}
 
-  	code = convert(tempcode.c_str());
+	if (removeParityBits) {
+  		code = convert((tempcode.substring(1,-1)).c_str());
+	} else 
+	{
+		code = convert(tempcode.c_str());
+	}
 
-	return  code;
+	return code;
 }
 
+String WiegandNG::getUID(bool removeParityBits, bool wiegandReadHex) {
+	String uidstr = "";
+
+	volatile unsigned char *buffer=_buffer;
+	unsigned int countedBytes = (_bitCounted/8);
+
+  	String tempcode = "";
+
+	if ((_bitCounted % 8)>0) countedBytes++;
+	// unsigned int bitsUsed = countedBytes * 8;
+	
+	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
+		unsigned char bufByte=buffer[i];
+		for(int x=0; x<8;x++) {
+			if ( (((_bufferSize-i) *8)-x) <= _bitCounted) {
+				if((bufByte & 0x80)) {
+					tempcode += "1";
+				}
+				else {
+          			tempcode += "0";				
+        		}
+      		}
+			bufByte<<=1;
+		}
+	}
+
+	if (removeParityBits) {
+		tempcode = tempcode.substring(1,-1);
+	} else 
+	{
+		tempcode = tempcode;
+	}
+
+	double temp = 0.0;
+	int tempint = 0;
+	String uidstrtemp = "";
+
+	for (int i=0; i < (_bitAllocated-2); i+=4) {
+		temp = convert((tempcode.substring(i, i+4)).c_str());
+		tempint = int(temp);
+		uidstrtemp += String(tempint, HEX);
+	}
+	for (int i=uidstrtemp.length()-2; i >= 0; i-=2) {
+		uidstr += uidstrtemp.substring(i, i+2);
+	}
+
+	return uidstr;
+}
 
 
