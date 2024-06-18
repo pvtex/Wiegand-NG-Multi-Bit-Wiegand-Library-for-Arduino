@@ -37,11 +37,11 @@ void WiegandNG::clear() {							// reset variables to start new capture
 	_bitCounted=0;
 	_lastPulseTime = millis();
 	memset((unsigned char *)_buffer,0,_bufferSize);
-	interrupts();									// allow interrupt
+	//interrupts();									// allow interrupt
 }
 
 void WiegandNG::pause() {
-	noInterrupts();									// disable interrupt so that user can process data 
+	//noInterrupts();									// disable interrupt so that user can process data 
 }
 
 volatile unsigned char * WiegandNG::getRawData() {
