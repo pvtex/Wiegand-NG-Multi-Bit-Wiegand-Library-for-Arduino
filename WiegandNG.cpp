@@ -1,6 +1,8 @@
 #include <WiegandNG.h>
 #if defined(ESP8266)
     #define INTERRUPT_ATTR ICACHE_RAM_ATTR
+#elif defined(ESP32)
+	#define INTERRUPT_ATTR ICACHE_RAM_ATTR
 #else
     #define INTERRUPT_ATTR
 #endif
