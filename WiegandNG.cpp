@@ -27,7 +27,8 @@ void shift_left(volatile unsigned char *ar, int size, int shift)
 				ar[i] = carry | (ar[i]<<1);
 			}
 			else {
-				ar[i] <<=1;
+				//ar[i] <<=1;
+				ar[1] = ar[i] << 1;
 			}
 		}   
 	}
@@ -107,7 +108,8 @@ INTERRUPT_ATTR void WiegandNG::ReadD1() {
 		_bitCounted=0;								// overflowed, 
 	} else {
 		shift_left(_buffer,_bufferSize,1);			// shift 1 into buffer
-		_buffer[_bufferSize-1] |=1;					// set last bit 1
+		//_buffer[_bufferSize-1] |=1;					// set last bit 1
+		_buffer[_bufferSize-1] = _buffer[_bufferSize] | 1;
 		_lastPulseTime = millis();					// keep track of time last wiegand bit received
 	}
 }
