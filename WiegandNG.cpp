@@ -9,13 +9,14 @@
 
 // pcintbranch
 
-volatile unsigned long	WiegandNG::_lastPulseTime;	// time last bit pulse received
-volatile unsigned int	WiegandNG::_bitCounted;		// number of bits arrived at Interrupt pins
-volatile unsigned char	*WiegandNG::_buffer;		// buffer for data retention
-unsigned int			WiegandNG::_bufferSize;		// memory (bytes) allocated for buffer
+unsigned long	WiegandNG::_wnglastPulseTime;	// time last bit pulse received
+unsigned int	WiegandNG::_wngbitCounted;		// number of bits arrived at Interrupt pins
+unsigned int	WiegandNG::_wngbufferSize;		// memory (bytes) allocated for buffer
+unsigned char*	WiegandNG::_wngbuffer;
+String 			WiegandNG::_strbuffer;
 
 
-void shift_left(volatile unsigned char *ar, int size, int shift)
+void WiegandNG::shift_left(unsigned char *ar, int size, int shift)
 {
 	while (shift--) {								// for each bit to shift ...
 		int carry = 0;								// clear the initial carry bit.
@@ -35,9 +36,9 @@ void shift_left(volatile unsigned char *ar, int size, int shift)
 }  
 
 void WiegandNG::clear() {							// reset variables to start new capture
-	_bitCounted=0;
-	_lastPulseTime = millis();
-	memset((unsigned char *)_buffer,0,_bufferSize);
+	_wngbitCounted=0;
+	_wnglastPulseTime = millis();
+	_strbuffer = "";
 	//interrupts();									// allow interrupt
 }
 
@@ -45,43 +46,43 @@ void WiegandNG::pause() {
 	//noInterrupts();									// disable interrupt so that user can process data 
 }
 
-volatile unsigned char * WiegandNG::getRawData() {
-	return _buffer;									// return pointer of the buffer
+unsigned char * WiegandNG::getRawData() {
+	return _wngbuffer;									// return pointer of the buffer
 }
 
 unsigned int WiegandNG::getPacketGap() {
-	return _packetGap;
+	return _wngpacketGap;
 }
 
 unsigned int WiegandNG::getBitAllocated() {
-	return _bitAllocated;
+	return _wngbitAllocated;
 }
 
 unsigned int WiegandNG::getBitCounted() {
-	return _bitCounted;
+	return _wngbitCounted;
 }
 
 unsigned int WiegandNG::getBufferSize() {
-	return _bufferSize;
+	return _wngbufferSize;
 }
 
 bool WiegandNG::available() {
 	bool ret=false;
 	noInterrupts();
-	unsigned long tempLastPulseTime = _lastPulseTime;
+	unsigned long tempLastPulseTime = _wnglastPulseTime;
 	interrupts();
 
 	unsigned long sysTick = millis();
-	//	if ((sysTick - _lastPulseTime) > _packetGap) {	// _packetGap (ms) laps
-	if ((sysTick - tempLastPulseTime) > _packetGap) {	// _packetGap (ms) laps
-		if(_bitCounted>0) {							// bits found, must have data, return true
-			if(_bitCounted<8) {
+	//	if ((sysTick - _wnglastPulseTime) > _packetGap) {	// _packetGap (ms) laps
+	if ((sysTick - tempLastPulseTime) > _wngpacketGap) {	// _packetGap (ms) laps
+		if(_wngbitCounted>0) {							// bits found, must have data, return true
+			if(_wngbitCounted<8) {
 #ifdef DEBUG
-				Serial.print(_bitCounted);
+				Serial.print(_wngbitCounted);
 				Serial.print(", ");
 				Serial.print(sysTick);
 				Serial.print(", ");
-				Serial.print(_lastPulseTime);
+				Serial.print(_wnglastPulseTime);
 				Serial.print(",");
 				Serial.println(tempLastPulseTime);
 #endif
@@ -90,48 +91,45 @@ bool WiegandNG::available() {
 		}
 		else
 		{
-			_lastPulseTime = millis();
+			_wnglastPulseTime = millis();
 		}
 	}
 	return ret;
 }
 
 INTERRUPT_ATTR void WiegandNG::ReadD0 () {
-	_bitCounted = _bitCounted + 1;									// increment bit count for Interrupt connected to D0
-	shift_left(_buffer,_bufferSize,1);				// shift 0 into buffer
-	_lastPulseTime = millis();						// keep track of time last wiegand bit received
+	_wngbitCounted = _wngbitCounted + 1;									// increment bit count for Interrupt connected to D0
+	//shift_left(_wngbuffer,_wngbufferSize,1);				// shift 0 into buffer
+	_wngbuffer[_wngbufferSize-1] |=1;	
+	_wnglastPulseTime = millis();						// keep track of time last wiegand bit received
+	_strbuffer = _strbuffer + "1";
 }
 
 INTERRUPT_ATTR void WiegandNG::ReadD1() {
-	_bitCounted = _bitCounted + 1;									// increment bit count for Interrupt connected to D1
-	if (_bitCounted > (_bufferSize * 8)) {
-		_bitCounted=0;								// overflowed, 
+	_wngbitCounted = _wngbitCounted + 1;									// increment bit count for Interrupt connected to D1
+	if (_wngbitCounted > (_wngbufferSize * 8)) {
+		_wngbitCounted=0;								// overflowed, 
+		_strbuffer = "";
 	} else {
-		shift_left(_buffer,_bufferSize,1);			// shift 1 into buffer
-		//_buffer[_bufferSize-1] |=1;					// set last bit 1
-		_buffer[_bufferSize-1] = _buffer[_bufferSize] | 1;
-		_lastPulseTime = millis();					// keep track of time last wiegand bit received
+		//shift_left(_wngbuffer,_wngbufferSize,1);			// shift 1 into buffer
+		_wngbuffer[_wngbufferSize-1] |=1;					// set last bit 1
+		_wngbuffer[_wngbufferSize-1] = _wngbuffer[_wngbufferSize] | 1;
+		_wnglastPulseTime = millis();					// keep track of time last wiegand bit received
+		_strbuffer = _strbuffer + "0";
 	}
-}
-
-bool WiegandNG::begin(unsigned int allocateBits, unsigned int packetGap) {
-	bool ret;
-	// newer versions of Arduino provide pin to interrupt mapping
-	ret=begin(2, 3, allocateBits, packetGap);
-	return ret;
 }
 
 bool WiegandNG::begin(uint8_t pinD0, uint8_t pinD1, unsigned int allocateBits, unsigned int packetGap) {
-	if (_buffer != NULL) {
-		delete [] _buffer;
+	if (_wngbuffer != NULL) {
+		delete [] _wngbuffer;
 	}
-	_packetGap = packetGap;
-	_bitAllocated = allocateBits;
+	_wngpacketGap = packetGap;
+	_wngbitAllocated = allocateBits;
 	
-	_bufferSize=(_bitAllocated/8);						// calculate the number of bytes required to store wiegand bits
-	if((_bitAllocated % 8) >0) _bufferSize++;			// add 1 extra byte to cater for bits that are not divisible by 8
-	_buffer = new unsigned char [_bufferSize];			// allocate memory for buffer
-	if(_buffer == NULL) return false;					// not enough memory, return false
+	_wngbufferSize=(_wngbitAllocated/8);						// calculate the number of bytes required to store wiegand bits
+	if((_wngbitAllocated % 8) >0) _wngbufferSize++;			// add 1 extra byte to cater for bits that are not divisible by 8
+	_wngbuffer = new unsigned char [_wngbufferSize];			// allocate memory for buffer
+	if(_wngbuffer == NULL) return false;					// not enough memory, return false
 
 	clear();
 	
@@ -147,8 +145,8 @@ WiegandNG::WiegandNG() {
 }
 
 WiegandNG::~WiegandNG() {
-	if (_buffer != NULL) {
-		delete [] _buffer;
+	if (_wngbuffer != NULL) {
+		delete [] _wngbuffer;
 	}
 }
 
@@ -164,20 +162,38 @@ long WiegandNG::convert(const char *str)
     return result;
 }
 
+long WiegandNG::strconvert(String str)
+{
+    long result = 0;
+	int strlength = str.length();
+
+	for (int i=0; i<strlength; i++) {
+		result <<= 1;
+		if (str.substring(i,i+1) == "1")
+		{
+			result += 1;
+		} else {
+			result += 0;
+		}
+	}
+    return result;
+}
+
 long WiegandNG::getCode(bool removeParityBits) {
-	volatile unsigned char *buffer=_buffer;
-	unsigned int countedBytes = (_bitCounted/8);
+	long code = 0;
+	
+	unsigned char *buffer=_wngbuffer;
+	unsigned int countedBytes = (_wngbitCounted/8);
 
   	String tempcode = "";
-  	long code = 0;
 
-	if ((_bitCounted % 8)>0) countedBytes++;
+	if ((_wngbitCounted % 8)>0) countedBytes++;
 	// unsigned int bitsUsed = countedBytes * 8;
 	
-	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
+	for (unsigned int i=_wngbufferSize-countedBytes; i< _wngbufferSize;i++) {
 		unsigned char bufByte=buffer[i];
 		for(int x=0; x<8;x++) {
-			if ( (((_bufferSize-i) *8)-x) <= _bitCounted) {
+			if ( (((_wngbufferSize-i) *8)-x) <= _wngbitCounted) {
 				if((bufByte & 0x80)) {
 					tempcode += "1";
 				}
@@ -190,24 +206,27 @@ long WiegandNG::getCode(bool removeParityBits) {
 	}
 
 	code = convert(tempcode.c_str());
+	code = strconvert(_strbuffer);
+	
 	return code;
 }
 
 String WiegandNG::getUID(bool removeParityBits, bool wiegandReadHex) {
 	String uidstr = "";
 
-	volatile unsigned char *buffer=_buffer;
-	unsigned int countedBytes = (_bitCounted/8);
+	unsigned char *buffer=_wngbuffer;
+	unsigned int countedBytes = (_wngbitCounted/8);
 
   	String tempcode = "";
 
-	if ((_bitCounted % 8)>0) countedBytes++;
+	if ((_wngbitCounted % 8)>0) countedBytes++;
 	// unsigned int bitsUsed = countedBytes * 8;
 	
-	for (unsigned int i=_bufferSize-countedBytes; i< _bufferSize;i++) {
+	
+	for (unsigned int i=_wngbufferSize-countedBytes; i< _wngbufferSize;i++) {
 		unsigned char bufByte=buffer[i];
 		for(int x=0; x<8;x++) {
-			if ( (((_bufferSize-i) *8)-x) <= _bitCounted) {
+			if ( (((_wngbufferSize-i) *8)-x) <= _wngbitCounted) {
 				if((bufByte & 0x80)) {
 					tempcode += "1";
 				}
@@ -218,20 +237,45 @@ String WiegandNG::getUID(bool removeParityBits, bool wiegandReadHex) {
 			bufByte<<=1;
 		}
 	}
+	
+	/*
+	String strbufferinv = "";
+	for (int i=(_strbuffer.length()-1); i>=0; i--){
+		strbufferinv = strbufferinv + _strbuffer.substring(i,i+1);
+	}
+	strbuffer = strbufferinv;
+	*/
 
 	if (removeParityBits) {
 		tempcode = tempcode.substring(1,-1);
+		_strbuffer = _strbuffer.substring(1,-1);
 	} else 
 	{
 		tempcode = tempcode;
+		_strbuffer = _strbuffer;
 	}
 
 	double temp = 0.0;
 	int tempint = 0;
 	String uidstrtemp = "";
 
-	for (int i=0; i < (_bitAllocated-2); i+=4) {
+	/*
+	for (int i=0; i < (_wngbitAllocated-2); i+=4) {
 		temp = convert((tempcode.substring(i, i+4)).c_str());
+		tempint = int(temp);
+		uidstrtemp += String(tempint, HEX);
+	}
+	for (int i=uidstrtemp.length()-2; i >= 0; i-=2) {
+		uidstr += uidstrtemp.substring(i, i+2);
+	}
+	*/
+	
+
+	String strtemp = "";
+	uidstrtemp = "";
+	uidstr = "";
+	for (int i=0; i < (_wngbitAllocated-2); i+=4) {
+		temp = strconvert(_strbuffer.substring(i, i+4));
 		tempint = int(temp);
 		uidstrtemp += String(tempint, HEX);
 	}
