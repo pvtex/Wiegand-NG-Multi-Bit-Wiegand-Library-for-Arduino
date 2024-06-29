@@ -12,13 +12,11 @@ class WiegandNG {
 private:
 	static void ReadD0();
 	static void ReadD1();
-	static void shift_left(unsigned char *ar, int size, int shift);
 	static unsigned long 	_wnglastPulseTime;	// time last bits received
 	static unsigned int 	_wngbitCounted;		// number of bits arrived at Interrupt pins
 	static unsigned int		_wngbufferSize;		// memory (bytes) allocated for buffer
 	unsigned int			_wngbitAllocated;	// wiegand bits required
 	unsigned int			_wngpacketGap;		// gap between wiegand packet in millisecond
-	static unsigned char *	_wngbuffer;			// buffer for data retention
 	static String			_strbuffer;
 	
 public:
@@ -30,9 +28,8 @@ public:
 	unsigned int getBitAllocated();
 	unsigned int getBufferSize();
 	unsigned int getPacketGap();
-	unsigned char *getRawData();
-	long convert(const char *str);
-	long strconvert(String str);
+	String getRawData();
+	long convert(String str);
 	long getCode(bool removeParityBits);
 	String getUID(bool removeParityBits, bool wiegandReadHex);
 	WiegandNG();
